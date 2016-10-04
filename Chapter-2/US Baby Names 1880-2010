@@ -1,1 +1,74 @@
-page 32
+Dir = '/'.join([
+	'//firm.seyfarth.com/DFS/CHIUsers/JMonson/My Documents',
+	'Programming/Python',
+	'pydata-book-master/names/'
+])
+names1880 = pd.read_csv(
+	''.join([Dir, 'yob1880.txt']),
+	names = ['name', 'sex', 'births']
+)
+
+names1880.groupby('sex').births.sum()
+# Having the .column AFTER making the groupby object is different...
+
+years = range(1880, 2011)
+pieces = []
+columns = ['name', 'sex', 'births']
+for year in years:
+	subdir = 'yob%d.txt' % year
+	path = Dir + '/' + subdir
+	frame = pd.read_csv(path, names = columns)
+	frame['year'] = year
+	pieces.append(frame)
+names = pd.concat(pieces, ignore_index = True)
+
+total_births = names.pivot_table(
+	values = 'births',
+	index = 'year',
+	columns = 'sex',
+	aggfunc = sum
+)
+%matplotlib
+total_births.plot(title = 'Total births by sex and year')
+
+def add_prop(group):
+	# Integer division floors
+	births = group.births.astype(float)
+	# as.numeric(df[['births']])
+	group['prop'] = births / births.sum()
+	# df[['prop']] <- df[['births']] / sum(df[['births']])
+	return group
+	# df
+names = names.groupby(['year', 'sex']).apply(add_prop)
+# ddply(names, c('year', 'sex'), add_prop)
+np.allclose( # similar to all.equal
+	names.groupby(['year', 'sex']).prop.sum(),
+	1
+)
+# all(
+# 	`==`(
+# 		daply(
+# 			names,
+# 			c('year', 'sex'),
+# 			function(df) sum(df[['prop']])
+# 		),
+# 		1
+# 	)
+# )
+
+def get_top1000(group):
+	return group.sort_index(by = 'births', ascending = False)[:1000]
+grouped = names.groupby(['year', 'sex'])
+top1000 = grouped.apply(get_top1000) # this is so plyr-like
+
+# Alternate
+pieces = []
+for year, group in names.groupby(['year', 'sex']):
+	pieces.append(
+		group.sort_index(by = 'births', ascending = False)[:1000]
+	)
+top1000 = pd.concat(pieces, ignore_index = True)
+
+
+# Analyzing Naming Trends
+page 36

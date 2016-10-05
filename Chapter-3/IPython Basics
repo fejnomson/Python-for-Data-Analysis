@@ -1,0 +1,98 @@
+# tab completion for whole modules, not just functions, objects, and methods
+pd.<tab>
+# also works for files and directories in your wd
+
+x = pd.Series([1, 2, 3])
+x? # similar to str()
+
+# Crazy that you can easily view the source? All source saved locally?
+# 	c:/users/jmonson/appdata/local/continuum/anaconda3/lib/site-packages/pandas/core/series.py
+
+x?? # To show source
+
+%run ipython_script_test.py
+# run script with file name ipython_script_test.py from iPython environment
+# 	Kind of similar to system() or system2(), but looks cleaner
+# 	So this might be good for a macro for Excel or something...
+
+%quickref # useful
+
+a = np.random.randn(100, 100)
+%timeit np.dot(a, a) # system.time()
+%time
+%prun # run statement thru code profiler
+
+# get help for magic functions too
+%reset?
+%reset # rm()
+
+%cd # better than os.chdir()??
+%pwd # better than os.getcwd()??
+
+%colors
+%config # get better color scheme?
+
+%debug # might be useful
+%tb # traceback()?
+
+%page # print object in pager
+%%html # render cell as html
+%%javascript # '' javascript
+%%latex # '' latex
+
+%pinfo
+%pinfo2 # object info, like str()? might be useful
+
+%qtconsole # open qtconsole connected to kernal
+
+
+mtcars = control + p + up
+# completes the line by searching thru the command history, super important!
+
+a_command = foo(x, y, z)
+a_ + up
+# this will search thru command history MATCHING the a_text; also super
+# 	important
+
+2 ** 27
+_ # PULLS THE MOST RECENT OUTPUT
+2 ** 72
+__ # PULLS THE SECOND MOST RECENT OUTPUT
+
+foo = 'bar'
+foo
+_i39 # input in cell 39
+_39 # output in cell 39
+# So you can quickly reference input and output cells with '_' and '_i'
+exec(_i48) # execute an old cell
+
+# this functionality keeps large objects from being garbage collections,
+# 	because they're stored in the cell input and output caches; would have
+# 	to manage if large datasets and memory problems
+
+# can store command in python object (list or string)
+
+# anything after '!' is exectued in the system shell, so you can delete
+# 	or copy files or directories, etc.
+# can store output of sehll command in variable: var = !<expr>
+
+# Skipping a lot of command line stuff, don't really use
+
+
+# Directory bookmark system
+# 	persist between sessions
+%bookmark mydocs "//firm.seyfarth.com/DFS/CHIUsers/JMonson/My Documents"
+%bookmark C 'C:/'
+%bookmark -l
+
+%pwd
+%cd mydocs
+%pwd
+
+%pwd
+%cd C
+%pwd
+
+
+# Software Development Tools
+page 62

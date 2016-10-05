@@ -83,6 +83,7 @@ exec(_i48) # execute an old cell
 # 	persist between sessions
 %bookmark mydocs "//firm.seyfarth.com/DFS/CHIUsers/JMonson/My Documents"
 %bookmark C 'C:/'
+%bookmark pandas_book "//firm.seyfarth.com/DFS/CHIUsers/JMonson/My Documents/Programming/Python/pydata-book-master/"
 %bookmark -l
 
 %pwd
@@ -95,4 +96,80 @@ exec(_i48) # execute an old cell
 
 
 # Software Development Tools
-page 62
+%debug
+# enter after error raised to invoke post mortem debugger and enter stack
+# 	frame where exception was raised
+run ch03/ipython_bug.py
+Dir = '/'.join([
+	'//firm.seyfarth.com/DFS/CHIUsers/JMonson/My Documents',
+	'Programming/Python',
+	'pydata-book-master/'
+])
+path = Dir + 'ch03/ipython_bug.py'
+run path
+run "//firm.seyfarth.com/DFS/CHIUsers/JMonson/My Documents/Programming/Python/pydata-book-master/ch03/ipython_bug.py"
+%debug # now you can navigate thru the stack frame, using 'u' and 'd'
+# 	arrows to navigate thru the stack trace.
+u
+u
+d
+
+# might want to invoke debugger or step thru code at certain execution points
+run -d "//firm.seyfarth.com/DFS/CHIUsers/JMonson/My Documents/Programming/Python/pydata-book-master/ch03/ipython_bug.py"
+s # step
+c # continue
+n # next line
+
+run -d "//firm.seyfarth.com/DFS/CHIUsers/JMonson/My Documents/Programming/Python/pydata-book-master/ch03/ipython_bug.py"
+s # this steps into a function
+n # this goes down one line
+!a # if variable name is same as command name, prefice with !
+
+
+# page 65: set_trace() and debug() look important, but skipping for now
+
+def f(x, y, z = 1):
+	tmp = x + y
+	return tmp / z
+debug(f, 1, 2, z = 2)
+
+# i could use more familiarity with debugging tools in general
+
+
+# Timing Code: %time and %timeit
+# 	Need these because don't have equivalent to system.time()
+strings = ['foo', 'foobar', 'baz', 'qux', 'python', 'guido van rossum'] * 100000
+method1 = [x for x in strings if x.startswith('foo')]
+method2 = [x for x in strings if x[:3] == 'foo']
+%time method1 = [x for x in strings if x.startswith('foo')]
+%time method2 = [x for x in strings if x[:3] == 'foo']
+%timeit method1 = [x for x in strings if x.startswith('foo')]
+%timeit method2 = [x for x in strings if x[:3] == 'foo']
+# get to know all the usual functions very well to understand performance
+x = 'foobar'
+y = 'foo'
+%timeit x.startswith(y)
+%timeit x[:3] == y
+
+
+# Basic Profiling: %prun and %run -p
+%cd pandas_book
+%bookmark -l
+python -m cProfile "//firm.seyfarth.com/DFS/CHIUsers/JMonson/My Documents/Programming/Python/pydata-book-master/ch03/cprof_example.py"
+%prun "//firm.seyfarth.com/DFS/CHIUsers/JMonson/My Documents/Programming/Python/pydata-book-master/ch03/cprof_example.py"
+%prun -l 7 -s cumulative run_experiment()
+# Ad hoc function call to profile
+%run -p -s cumulative "//firm.seyfarth.com/DFS/CHIUsers/JMonson/My Documents/Programming/Python/pydata-book-master/ch03/cprof_example.py"
+# run from IPython and profile; i think this is the -p
+
+
+# Profiling a Function Line-by-Line # Page 70
+<have to add ipython extension into configuration>
+	c.TerminalIPythonApp.extensions = ['line_profiler']
+%lprun -f add_and_sum -f call_function call_function() # call line profiling from ipython
+
+
+# IPython HTML Notebook
+
+# Reloading Module Dependencies
+

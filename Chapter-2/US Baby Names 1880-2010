@@ -71,4 +71,78 @@ top1000 = pd.concat(pieces, ignore_index = True)
 
 
 # Analyzing Naming Trends
-page 36
+boys = top1000[top1000.sex == 'M']
+girls = top1000[top1000.sex == 'F']
+total_births = top1000.pivot_table(
+	values = 'births',
+	index = 'year',
+	columns = 'name',
+	aggfunc = sum
+)
+subset = total_births[['John', 'Harry', 'Mary', 'Marilyn']]
+subset.plot(
+	subplots = True,
+	figsize = (12, 10),
+	grid = False,
+	title = 'Number of births per year'
+)
+# Measuring the increase in naming diversity
+table = top1000.pivot_table(
+	values = 'prop',
+	index = 'year',
+	columns = 'sex',
+	aggfunc = sum
+)
+table.plot(
+	title = 'Sum of table1000.prop by year and sex',
+	yticks = np.linspace(0, 1.2, 13),
+	xticks = range(1880, 2020, 10)
+)
+df = boys[boys.year == 2010]
+df
+prop_cumsum = df.sort_index(
+	by = 'prop', ascending = False
+).prop.cumsum()
+prop_cumsum.searchsorted(0.5)
+df = boys[boys.year == 1900]
+in1900 = df.sort_index(
+	by = 'prop', ascending = False
+).prop.cumsum()
+in1900.searchsorted(0.5) + 1
+# So it takes fewer names to get to 0.5 prop in 1900 than in 2010
+def get_quantile_count(group, q = 0.5):
+	group = group.sort_index(by = 'prop', ascending = False)
+	return int(group.prop.cumsum().searchsorted(q)) + 1
+diversity = top1000.groupby(
+	# This is so ddply. Like much better than df %>% groupby %>% summarise or do.
+		['year', 'sex']
+	).apply(
+		get_quantile_count
+	)
+diversity = diversity.unstack('sex') # tidyr::spread()
+diversity.plot(title = 'Number popular names in top 50%')
+
+# The "Last Letter" Revolution
+get_last_letter = lambda x: x[-1]
+last_letters = names.name.map(get_last_letter)
+# str_sub(x, -1); vectorized in R, but you need to use map() here to apply
+# 	to each element
+last_letters.name = 'last_letter'
+table = names.pivot_table(
+	# This is SO tableau-like
+	values = 'births',
+	index = last_letters,
+	columns = ['sex', 'year'],
+	aggfunc = sum
+)
+subtable = table.reindex(
+	columns = [1910, 1960, 2010], level = 'year'
+)
+# subset by columns at year, but not sex
+subtable.sum() # Love this, so clean. subtable.sum(axis = 1)
+letter_prop = subtable / subtable.sum().astype(float)
+# divide everything by sum of occurances to get % of all for each group,
+# 	Again, very tableau-like
+import matplotlib.pyplot as plt
+fig, axes = plt.subplots(2, 1, figsize = (10, 8))
+letter_prop['M'].plot(kind = 'bar', rot = 0, ax = axes[0], title = 'Male')

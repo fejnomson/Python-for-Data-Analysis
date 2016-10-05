@@ -1,3 +1,6 @@
+import pandas as pd
+import numpy as np
+from pandas import Series, DataFrame
 Dir = '/'.join([
 	'//firm.seyfarth.com/DFS/CHIUsers/JMonson/My Documents',
 	'Programming/Python',
@@ -145,4 +148,35 @@ letter_prop = subtable / subtable.sum().astype(float)
 # 	Again, very tableau-like
 import matplotlib.pyplot as plt
 fig, axes = plt.subplots(2, 1, figsize = (10, 8))
-letter_prop['M'].plot(kind = 'bar', rot = 0, ax = axes[0], title = 'Male')
+letter_prop['M'].plot(
+	kind = 'bar', rot = 0, ax = axes[0], title = 'Male'
+)
+letter_prop['F'].plot(
+	kind = 'bar', rot = 0, ax = axes[1], title = 'Female', legend = False
+)
+letter_prop = table / table.sum().astype(float)
+dny_ts = letter_prop.ix[['d', 'n', 'y'], 'M'].T # some letters for men
+dny_ts.plot()
+
+# Boy names that became girl names
+all_names = top1000.name.unique()
+mask = np.array([
+	# A little weird going from pandas to base; vectorised to list
+	# 	comprehensions and map()
+	# Testing for string inclusion with 'in' is super clean
+	'lesl' in x.lower() for x in all_names
+])
+lesley_like = all_names[mask]
+filtered = top1000[top1000.name.isin(lesley_like)]
+filtered.groupby('name').births.sum()
+table = filtered.pivot_table(
+	values = 'births',
+	index = 'year',
+	columns = 'sex',
+	aggfunc = 'sum'
+)
+table = table.div(table.sum(1), axis = 0) # get %s by dividing by rowsums
+table.plot(
+	# Super cool
+	style = {'M': 'k-', 'F': 'k--'}
+)

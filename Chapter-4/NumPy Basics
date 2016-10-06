@@ -139,4 +139,78 @@ bools.any() # what it should be
 bools.all()
 
 # Sorting
-page 101
+from numpy.random import randn
+arr = randn(8)
+arr.sort() # in place, not copy on modify
+arr = randn(5, 3)
+arr
+x = arr.copy()
+x.sort(1) # sorts each 'row'
+x
+y = arr.copy()
+y.sort(0) # sorts each 'column'
+y
+np.sort(arr) # top leve l RETURNS COPY INSTEAD OF MOD IN PLACE
+
+# Unique and Other Set Logic
+np.unique(names)
+names.unique() # no instance method
+sorted(set(names)) # pure python
+values = np.array([6, 0, 0, 3, 2, 5, 6])
+np.in1d(values, [2, 3, 6]) # %in%
+values[np.in1d(values, [2, 3, 6])]
+# array set ops: these look fine 
+x = pd.Series(['a', 'b', 'c', 'd'])
+np.in1d(x, ['b']) # looks like this works fine for series
+
+# File Input and Output with Arrays
+# read and write arrays to disk
+# np.save and np.load
+arr = np.arange(10)
+np.save('some_array', arr)
+np.load('some_array.npy')
+np.savez('array_archive.npz', a = arr, b = arr) # 'zip archive'
+arch = np.load('array_archive.npz')
+arch['b']
+arch['a'] # loads in dict like object
+
+# Saving and Loading Text Files
+# don't think this matters... would just save as csv or text using pandas api
+
+# Linear Algebra
+# Don't need this right now?
+
+# Random Number Generation
+# numpy.random module
+# Don't need this right now? Just know use this instead of base python
+
+# Example: Random Walks
+nsteps = 1000
+draws = np.random.randint(0, 2, size = nsteps)
+steps = np.where(draws > 0, 1, -1)
+walk = steps.cumsum()
+walk.min()
+walk.max()
+(np.abs(walk) >= 10).argmax() # (boolean for if over 10 away from origin).firstoccurance
+
+# Simulating Many Random Walks at Once
+nwalks = 5000
+nsteps = 1000
+draws = np.random.randint(0, 2, size = (nwalks, nsteps)) # 0 or 1
+# so size arg takes tuple indicating how many sub-arrays of random
+# 	numbers you want
+steps = np.where(draws > 0, 1, -1)
+# as expected
+walks = steps.cumsum(1)
+# take cumsum for each sub-array
+walks
+walks.max()
+walks.min()
+hits30 = (np.abs(walks) >= 30).any(1) # any don't cross 30? accross 'rows'
+hits30
+hits30.sum()
+crossing_times = (np.abs(walks[hits30]) >= 30).argmax(1)
+# of the 'rows' that hit 30 or -30, which ones were 30 or -30, find first
+# 	occurance using argmax (rowwise)
+crossing_times.mean()
+# so on average, it takes 500 coin flips to get 30 away from origin

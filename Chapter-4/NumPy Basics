@@ -1,1 +1,45 @@
-d
+# NumPy ndarray
+import numpy as np
+data = np.array([
+	[0.9526, -0.246, -0.8856],
+	[0.5639, 0.2379, 0.9104]
+])
+data * 10
+data.dtype
+data.shape
+
+# Creating ndarrays
+data1 = [6, 7.5, 8, 0, 1]
+arr1 = np.array(data1)
+data2 = [[1, 2, 3, 4], [5, 6, 7, 8]]
+arr2 = np.array(data2)
+arr2.ndim
+arr2.shape
+arr1.dtype
+arr2.dtype
+np.zeros(10)
+np.zeros((3, 6))
+np.empty((2, 3, 2)) # not literally empty
+np.arange(15) # range()
+
+# Data Types for ndarrays
+# dtype is an OBJECT that has info that ndarray needs
+arr1 = np.array([1, 2, 3], dtype = np.float64)
+arr2 = np.array([1, 2, 3], dtype = np.int32)
+arr1.dtype
+arr2.dtype
+arr = np.array([1, 2, 3, 4, 5])
+arr.dtype
+float_arr = arr.astype(np.float64)
+float_arr.dtype
+# float to int will truncate, not round!!
+numeric_strings = np.array(['1.25', '-9.6', '42'], dtype = np.string_)
+numeric_strings.astype(float)
+int_array = np.arange(10)
+calibers = np.array([.22, .27, .357, .38, .44, .5])
+int_array.astype(calibers.dtype)
+empty_uint32 = np.empty(8, dtype = 'u4') # shorthand
+empty_uint32
+
+# Operations between Arrays and Scalars
+page 85

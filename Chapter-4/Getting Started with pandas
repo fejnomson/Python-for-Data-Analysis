@@ -1,1 +1,62 @@
-d
+from pandas import Series, DataFrame
+import pandas as pd
+
+# Series
+# kind of like numpy array with index
+obj = Series([4, 7, -5, 3])
+obj
+obj.index
+obj.values
+np.array([4, 7, -5, 3], dtype = np.int64)
+# so it's basically like a wrapper for np.array, mostly labels and methods...
+obj2 = Series([4, 7, -5, 3], index = ['d', 'b', 'a', 'c'])
+obj2
+obj2.index
+obj2['a']
+obj2[['a', 'd']]
+# although explained at ordered dict; substituted in many functions that
+# 	expect a dict
+'b' in obj2
+'e' in obj2
+sdata = {'Ohio': 35, 'Texas': 71, 'Oregon':16, 'Utah': 5}
+obj3 = Series(sdata)
+states = ['California', 'Ohio', 'Oregon', 'Texas']
+obj4 = Series(sdata, index = states)
+# Series will match dict keys with object you pass as index
+pd.isnull(obj4) # is.na()
+pd.notnull(obj4) # top level methods
+obj4.isnull()
+obj4.notnull() # instance methods
+obj3
+obj4
+obj3 + obj4 # computations are aligned along index, auto data alignment
+obj4.name = 'population'
+obj4.index.name = 'state'
+# name series and index attribute
+obj.index = ['bob', 'steve', 'jeff', 'ryan']
+# mod index in place
+
+# DataFrame
+# more of a dict of series that all share the same index
+# row and column operations are symetrical; super different than R
+# data are stored in 2d blocks, RATHER THAN list or dict; this is very
+# 	different than R where its a list of vectors
+data = {
+	'state': ['Ohio', 'Ohio', 'Ohio', 'Nevada', 'Nevada'],
+	'year': [2000, 2000, 2000, 2000, 2000],
+	'pop': [1.5, 1.7, 3.6, 2.4, 2.9]
+}
+frame = DataFrame(data)
+DataFrame(data, columns = ['year', 'state', 'pop'])
+# note cols are in different order; list matched with dict keys
+frame2 = DataFrame(
+	data,
+	columns = ['year', 'state', 'pop', 'debt'],
+	index = ['one', 'two', 'three', 'four', 'five']
+)
+frame2.columns
+frame2['state']
+frame2.year
+
+
+page 117

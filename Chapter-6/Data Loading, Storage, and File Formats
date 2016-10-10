@@ -1,1 +1,61 @@
-d
+# Reading and writing data in text format
+# python is beloved for general-purpose file wrangling -> good for eDIG tool
+from pandas import Series, DataFrame
+import pandas as pd
+import numpy as np
+%cd pandas_book_ch6
+df = pd.read_csv('ex1.csv')
+df = pd.read_table('ex1.csv', sep = ',')
+pd.read_csv('ex2.csv', header = None)
+pd.read_csv('ex2.csv', names = ['a', 'b', 'c', 'd', 'message'])
+pd.read_csv(
+	'ex2.csv',
+	names = ['a', 'b', 'c', 'd', 'message'],
+	index_col = 'message'
+)
+parsed = pd.read_csv('csv_mindex.csv', index_col = ['key1', 'key2'])
+# pass multiindex from cols upon reading in
+list(open('ex3.txt'))
+result = pd.read_table('ex3.txt', sep = '\s+')
+result
+# if delimiter is variable whitespace, delimiter is regex respresenting that
+pd.read_csv('ex4.csv', skiprows = [0, 2, 3])
+# interesting that you can pass a list to skiprows, not just an integer
+result = pd.read_csv('ex5.csv')
+result
+# SENTINEL values are NA, NULL, etc.; these represent NAs
+pd.isnull(result)
+pd.read_csv('ex5.csv', na_values = ['NULL'])
+pd.read_csv('ex5.csv', na_values = ['NULL', 'two', 1])
+sentinels = {
+	'message': ['foo', 'NA'],
+	'something': ['two']
+}
+pd.read_csv('ex5.csv', na_values = sentinels)
+# Using different sentinals for different columns is wicked smart...
+# converters arg also looks cool {Emplid: lambda x: x.astype(str)}
+
+# Reading Text Files in Pieces
+result = pd.read_csv('ex6.csv')
+result
+pd.read_csv('ex6.csv', nrows = 5) # only first 5 lines, avoid reading full file
+chunker = pd.read_csv('ex6.csv', chunksize = 1000)
+chunker
+# this returns a text parser object, that'll let you iterate over parts
+# 	of a file specified by chunksize
+tot = Series([])
+for piece in chunker: # for every 1,000 lines in the file?
+	tot = tot.add(
+		piece['key'].value_counts(), fill_value = 0
+	)
+tot = tot.sort_values(ascending = False)
+
+cont = []
+for piece in chunker: # for every 1,000 lines in the file?
+	cont.append(piece.head())
+cont
+# not entirely sure how this works, but don't think that important now
+
+
+# Writing Data Out to Text Format
+page 162

@@ -1,1 +1,561 @@
-d
+
+
+
+from pandas import Series, DataFrame
+import pandas as pd
+
+# Series
+# kind of like numpy array with index
+obj = Series([4, 7, -5, 3])
+obj
+obj.index
+obj.values
+np.array([4, 7, -5, 3], dtype = np.int64)
+# so it's basically like a wrapper for np.array, mostly labels and methods...
+obj2 = Series([4, 7, -5, 3], index = ['d', 'b', 'a', 'c'])
+obj2
+obj2.index
+obj2['a']
+obj2[['a', 'd']]
+# although explained at ordered dict; substituted in many functions that
+# 	expect a dict
+'b' in obj2
+'e' in obj2
+sdata = {'Ohio': 35, 'Texas': 71, 'Oregon':16, 'Utah': 5}
+obj3 = Series(sdata)
+states = ['California', 'Ohio', 'Oregon', 'Texas']
+obj4 = Series(sdata, index = states)
+# Series will match dict keys with object you pass as index
+pd.isnull(obj4) # is.na()
+pd.notnull(obj4) # top level methods
+obj4.isnull()
+obj4.notnull() # instance methods
+obj3
+obj4
+obj3 + obj4 # computations are aligned along index, auto data alignment
+obj4.name = 'population'
+obj4.index.name = 'state'
+# name series and index attribute
+obj.index = ['bob', 'steve', 'jeff', 'ryan']
+# mod index in place
+
+# DataFrame
+# more of a dict of series that all share the same index
+# row and column operations are symetrical; super different than R
+# data are stored in 2d blocks, RATHER THAN list or dict; this is very
+# 	different than R where its a list of vectors
+data = {
+	'state': ['Ohio', 'Ohio', 'Ohio', 'Nevada', 'Nevada'],
+	'year': [2000, 2000, 2000, 2000, 2000],
+	'pop': [1.5, 1.7, 3.6, 2.4, 2.9]
+}
+frame = DataFrame(data)
+DataFrame(data, columns = ['year', 'state', 'pop'])
+# note cols are in different order; list matched with dict keys
+frame2 = DataFrame(
+	data,
+	columns = ['year', 'state', 'pop', 'debt'],
+	index = ['one', 'two', 'three', 'four', 'five']
+)
+frame2.columns
+frame2['state']
+frame2.year
+
+val = Series([-1.2, -1.5, -1.7], index = ['two', 'four', 'five'])
+frame2['debt'] = val
+frame2['eastern'] = frame2.state == 'Ohio'
+frame2
+del frame2['debt']
+
+# indexing df column returns VIEW not COPY
+x = frame2['pop']
+x
+x['three'] = 9999.0
+frame2
+
+pop = {
+	'Nevada': {
+		2001: 2.4, 2002: 2.9
+	},
+	'Ohio': {
+		2000: 1.5, 2001: 1.7, 2002: 3.6
+	}
+}
+frame3 = DataFrame(pop) # ix is sorted union of keys
+DataFrame(pop, index = [2001, 2002, 2003]) # unless you explicitly say
+pdata = {
+	'Ohio': frame3['Ohio'][:-1],
+	'Nevada': frame3['Nevada'][:2]
+}
+
+frame2.values # returns 2D np array.
+
+
+# Index Objects
+obj = Series(range(3), index = ['a', 'b', 'c'])
+index = obj.index
+index[1] = 'd' # immutable
+index = pd.Index(np.arange(3))
+obj2 = Series([1.5, -2.5, 0], index = index)
+obj2.index is index
+
+frame3
+'Ohio' in frame3.columns
+
+# there are a bunch of index-specific properties and methods
+frame3.index
+frame3.index.union([2001, 2004])
+frame3.index.isin([2001, 2004])
+frame3.index.drop([2001])
+frame3.index.insert(1, 2001)
+frame3.index.is_monotonic
+frame3.index.is_unique
+frame3.index.unique()
+
+# Essential Functionality
+obj = Series([4.5, 7.2, -5.3, 3.6], index = ['d', 'b', 'a', 'c'])
+obj2 = obj.reindex(['a', 'b', 'c', 'd', 'e'])
+obj.reindex(['a', 'b', 'c', 'd', 'e'], fill_value = 0)
+obj3 = Series(['blue', 'purple', 'yellow'], index = [0, 2, 4])
+obj3.reindex(
+	# still don't entirely understand reindexing
+	range(6), method = 'ffill'
+	# forward fills missing values
+)
+frame = DataFrame(
+	np.arange(9).reshape((3, 3)),
+	index = ['a', 'c', 'd'],
+	columns = ['Ohio', 'Texas', 'California']
+)
+frame2 = frame.reindex(['a', 'b', 'c', 'd'])
+states = ['Texas', 'Utah', 'California']
+frame.reindex(columns = states)
+frame.reindex(
+	index = ['a', 'b', 'c', 'd'],
+	method = 'ffill',
+	columns = states
+)
+
+obj = Series(np.arange(5.), index = ['a', 'b', 'c', 'd', 'e'])
+new_obj = obj.drop('c')
+obj.drop(['d', 'c'])
+frame.drop(['Texas', 'California'], axis = 1) # drop columns with index obj
+data = DataFrame(
+	np.arange(16).reshape((4, 4)),
+	index = ['Ohio', 'Colorado', 'Utah', 'New York'],
+	columns = ['one', 'two', 'three', 'four']
+)
+data.drop(['Colorado', 'Ohio'])
+data.drop('three', axis = 1)
+
+
+# Indexing, selection, and filtering
+obj = Series(np.arange(4.), index = ['a', 'b', 'c', 'd'])
+obj['b']
+obj[1]
+obj[['b', 'a']]
+obj['b':'c']
+obj['b':'d']
+obj['b':'d'] = 999
+data = DataFrame(
+	np.arange(16).reshape((4, 4)),
+	index = ['Ohio', 'Colorado', 'Utah', 'New York'],
+	columns = ['one', 'two', 'three', 'four']
+)
+data['two']
+data[['two', 'one']]
+data[:2]
+data[data['three'] > 5]
+# kinda awk that `[` operater does rows or columns without specifying
+data < 5
+data[data < 5] = 0 # DF indexing
+data.loc['Colorado', ['two', 'three']]
+data.loc[:'Utah', 'two']
+data.ix[data.three > 5, :3]
+
+# Arithmetic and data alignment
+s1 = Series([7.3, -2.5, 3.4, 1.5], index = ['a', 'c', 'd', 'e'])
+s2 = Series([-2.1, 3.6, -1.5, 4, 3.1], index = ['a', 'c', 'e', 'f', 'g'])
+s1 + s2 # adds by index, but if they're both missing, returns NA
+df1 = DataFrame(
+	np.arange(9.).reshape((3, 3)),
+	columns = list('bcd'),
+	index = ['Ohio', 'Texas', 'Colorado']
+)
+df2 = DataFrame(
+	np.arange(12.).reshape((4, 3)),
+	columns = list('bde'),
+	index = ['Utah', 'Ohio', 'Texas', 'Oregon']
+)
+df1 + df2 # adds on the union of labels from each axis
+df1 = DataFrame(np.arange(12.).reshape((3, 4)), columns = list('abcd'))
+df2 = DataFrame(np.arange(20.).reshape((4, 5)), columns = list('abcde'))
+df1 + df2
+df1.add(df2, fill_value = 0) # so the add method helps you be more specific
+# 	about matching with the index labels. also methods for subtraction,
+# 	division, multiplication.
+df1.reindex(columns = df2.columns, fill_value = 0)
+
+arr = np.arange(12.).reshape(3, 4)
+arr
+arr - arr[0]
+# so this recycles arr[0] into a vector for each vector in arr, then
+# 	subtracts the broadcasted vector from arr
+
+frame = DataFrame(
+	np.arange(12.).reshape((4, 3)),
+	columns = list('bde'),
+	index = ['Utah', 'Ohio', 'Texas', 'Oregon']
+)
+series = frame.ix[0]
+frame - series
+# similar to the numpy example, matches the series index against the frames
+# 	columns, then broadcasts the series into the number of rows in the
+# 	frame.
+
+series2 = Series(range(3), index = ['b', 'e', 'f'])
+frame + series2
+# if differences between index sets, will take union and fill missing
+# 	with NA
+
+series3 = frame['d']
+frame
+series3
+frame.sub(series3, axis = 0)
+# the sub method can change the axis, so youre matching the series's index
+# 	with the frames row index, and then broadcasting the series to the 
+# 	number of columns in frame.
+
+
+# Function Application and Mapping
+frame = DataFrame(
+	np.random.randn(4, 3),
+	columns = list('bde'),
+	index = ['Utah', 'Ohio', 'Texas', 'Oregon']
+)
+frame
+np.abs(frame)
+# can use numpy methods on pandas objects
+# Still hard to build intuition. is it a dict containing dicts of numpy
+# 	arrays? is it a 2d numpy array that's hashed?
+
+f = lambda x: x.max() - x.min()
+frame.apply(f) # apply to each column
+frame.apply(f, axis = 1) # apply to each row
+# not necessary for most common stuff
+frame.sum()
+frame.sum(axis = 1)
+
+def f(x):
+	return Series([x.min(), x.max()], index = ['min', 'max'])
+frame.apply(f)
+# groupwise function can return things other than scalars
+# so this one returns a series for each col, containing the min and the
+# 	max
+# # Similar to:
+# 		f <- function(x) {
+# 			vec <- c(min(x), max(x))
+# 			names(vec) <- c('min', 'max')
+# 			vec
+# 		}
+# 		plyr::ldply(
+# 			mtcars,
+# 			f
+# 		)
+# 		df <- plyr::colwise(f)(mtcars)
+# 		row.names(df) <- c('min', 'max')
+# 		df
+format = lambda x: '%.2f' % x
+frame.applymap(format) # apply function ELEMENT WISE, not row or col wise
+# Series has a map function for applying an element wise function
+frame['e'].map(format)
+
+
+# Sorting and ranking
+obj = Series(range(4), index = ['d', 'a', 'b', 'c'])
+obj.sort_index()
+frame = DataFrame(
+	np.arange(8).reshape((2, 4)),
+	index = ['three', 'one'],
+	columns = ['d', 'a', 'b', 'c']
+)
+frame.sort_index()
+obj = Series([4, 7, -3, 2])
+obj.order()
+obj = Series([4, np.nan, 7, np.nan, -3, 2]) # nas last
+frame = DataFrame({
+	'b': [4, 7, -3, 2],
+	'a': [0, 1, 0, 1]
+})
+frame
+frame.sort_index(by = 'b')
+
+obj = Series([7, -5, 7, 4, 2, 0, 4])
+obj.rank() # like order(), gives you the indexes of the elements if they
+# 	were to be sorted.
+# This assigns means to ties; have to specify how you want to break ties
+obj.rank(method = 'first') # breaks ties by OG order
+obj.rank(ascending = False, method = 'max')
+
+frame = DataFrame({
+	'b': [4, 7, -3, 2],
+	'a': [0, 1, 0, 1],
+	'c': [-2, 5, 8, -2.5]
+})
+frame.rank(axis = 1)
+
+
+# Axis indexes with duplicate values
+obj = Series(range(5), index = ['a', 'a', 'b', 'b', 'c'])
+obj
+obj.index.is_unique
+obj['a'] # if duplicate ix values, will return a series
+obj['c'] # instead of a scalar
+df = DataFrame(
+	np.random.randn(5, 3),
+	index = ['a', 'a', 'b', 'b', 'c']
+)
+df
+df.ix['b']
+df.ix['c']
+
+
+# Summarizing and Computing Descriptive Statistics
+# most stuff built to exclude missing data
+df = DataFrame(
+	[
+		[1.4, np.nan],
+		[7.1, -4.5],
+		[np.nan, np.nan],
+		[0.75, -1.3]
+	],
+	index = ['a', 'b', 'c', 'd'],
+	columns = ['one', 'two']
+)
+df
+df.sum() # drops NAs automatically. this is super nice
+df.mean(axis = 1) # But doesn't if all elements are NA. so NA + NA isn't 0
+df.mean(axis = 1, skipna = False) # default R na handling
+df.idxmax() # returns indices of where values are instead of values themselves
+df.cumsum() # rolling sum going down each col
+df.describe() # summary(), but better
+obj = Series(['a', 'a', 'b', 'c'] * 4)
+# Still kind of confusing that this is a series of python objects, and 
+# 	those objects are strings, instead of having it be a built in string
+# 	dtype like in R, and that if it's 'object' dtype, all objects dont 
+# 	need to be the same class.
+obj.describe() # this is pretty swag
+obj = Series(range(5), index = ['a', 'a', 'b', 'b', 'c'])
+obj.diff() # useful
+obj.pct_change()
+
+
+# Correlation and Covariance
+import pandas.io.data as web
+
+all_data = {}
+for ticker in ['AAPL', 'IBM', 'MSFT', 'GOOG']:
+	# crazy that this actually works this easy
+	all_data[ticker] = web.get_data_yahoo(ticker, '1/1/2000', '1/1/2010')
+	# pull df for each ticker, store in key for each ticker
+price = DataFrame({
+	# get DF of closing prices for each ticker in all_data dict
+	tic: data['Adj Close'] for tic, data in all_data.items()
+	# interesting that the index is dates, and as you make the dict into 
+	# 	 df, it aligns all the dates automatically.
+})
+volume = DataFrame({
+	# really interseting to use a dict comprehension right into a DF like this
+	tic: data['Volume'] for tic, data in all_data.items()
+})
+
+returns = price.pct_change() # daily % change of prices, going down cols, by ticker
+returns.tail()
+
+returns.MSFT.corr(returns.IBM) # correlation btwn df$msft and df$ibm
+returns.MSFT.cov(returns.IBM)
+
+returns.corr() # returns full correllation matrix
+returns.cov() # returns full covariance matrix
+
+returns.corrwith(returns.IBM) # computes correllation between each key in 
+# 	returns df and IBM, guess matches by date automatically using labels
+returns.corrwith(volume) # corr btwn % change in price and volume
+# Starting to see how valuable the alignment is in some cases, e.g. working
+# 	with gnarly time series data. It'd be a huge hassle to always have to 
+# 	manually line up the dates for each col, vector before any computation
+
+
+# Unique Values, Value Counts, and Membership
+obj = Series(['c', 'a', 'd', 'a', 'a', 'b', 'b', 'c', 'c'])
+unique = obj.unique()
+obj.value_counts() # love this, not sure why it's not in R
+obj.value_counts(normalize = True) # swag
+obj.value_counts(bins = 4)
+pd.cut() # Think this is findInterval(); could be super useful
+pd.value_counts(obj.values, sort = False) # top level
+mask = obj.isin(['b', 'c']) # vectorised set membership
+obj[mask]
+data = DataFrame({
+	'Qu1': [1, 3, 4, 3, 4],
+	'Qu2': [2, 3, 1, 2, 3],
+	'Qu3': [1, 5, 2, 4, 4]
+	})
+data
+result = data.apply(pd.value_counts).fillna(0)
+result
+# this is interesting. will use the ix as the group, then have the ix
+# 	hold everything together in the output DF.
+# So in the first col, 1 shows up once, 2 shows up 0 times, 3 shows up
+# 	2 times, 4 shows up 2 times, and 5 shows up 0 times.
+# So it'll reduce each vect to a vect of counts, then it'll squish those
+# 	together.
+# Looks like this is an example of apply() handling series output, which
+# 	is a little mind-bending.
+# There are prob a lot of implications to something like this; collapse
+# 	each col by 
+
+
+# Handling Missing Data
+string_data = Series(['aardvark', 'artichoke', np.nan, 'avocado'])
+string_data
+string_data.isnull()
+string_data[0] = None
+string_data.isnull() # None is considered np.nan also, even though they're different
+
+
+# Filtering Out Missing Data
+from numpy import nan as NA
+data = Series([1, NA, 3.5, NA, 7])
+data
+data.dropna()
+data[data.notnull()] # manual alternate
+data = DataFrame([
+	[1., 6.5, 3.],
+	[1., NA, NA],
+	[NA, NA, NA],
+	[NA, 6.5, 3.]
+])
+cleaned = data.dropna() # complete.cases()
+data.dropna(how = 'all')
+data.dropna(axis = 1, how = 'all')
+
+df = DataFrame(np.random.randn(7, 3))
+df.ix[:4, 1] = NA; df.ix[:2, 2] = NA
+df.dropna(thresh = 3) # only keep rows with 3 or more complete obs.
+df.dropna(thresh = 2) # rows with 2 or more complete obs.
+# this is really smart. drop row if there are a certain number of NAs
+
+
+# Filling in Missing Data
+# fillna is the main workhorse
+df.fillna(0)
+df.fillna({1: 0.5, 2: -1}) # pass a dict to fill nas with certain value, also smart
+df.fillna(0, inplace = True) # mod in place
+
+df = DataFrame(np.random.randn(6, 3))
+df.ix[2:, 1] = NA; df.ix[4:, 2] = NA
+df
+df.fillna(method = 'ffill')
+df.fillna(method = 'ffill', limit = 2)
+
+data = Series([1., NA, 3.5, NA, 7])
+data.fillna(data.mean()) # fill nas with mean
+
+
+# Hierarchical Indexing
+data = Series(
+	np.random.randn(10),
+	index = [
+		['a', 'a', 'a', 'b', 'b', 'b', 'c', 'c', 'd', 'd'],
+		[1, 2, 3, 1, 2, 3, 1, 2, 2, 3]
+	]
+)
+data.index
+data['b']
+data['b':'c']
+data.ix[['b', 'd']]
+data[:, 2] # 2nd obs. within each group
+# Really important in reshaping and groupwise ops!
+data.unstack()
+frame = DataFrame(
+	np.arange(12).reshape((4, 3)),
+	index = [
+		['a', 'a', 'b', 'b'],
+		[1, 2, 1, 2]
+	],
+	columns = [
+		['Ohio', 'Ohio', 'Colorado'],
+		['Green', 'Red', 'Green']
+	]
+)
+frame.loc[:, ('Ohio', 'Red')]
+frame.index.names = ['key1', 'key2']
+frame.columns.names = ['state', 'color']
+# might want to create this and reuse it
+pd.MultiIndex.from_arrays(
+	[
+		['Ohio', 'Ohio', 'Colorado'],
+		['Green', 'Red', 'Green']
+	],
+	names = ['state', 'color']
+)
+
+
+# Reordering and Sorting Levels
+frame.swaplevel('key1', 'key2')
+frame.sortlevel(1)
+frame.sortlevel(0)
+frame.swaplevel(0, 1).sortlevel(0)
+# HAVING EVERYTHING SORTED FROM OUTERMOST LEVEL IN MULITINDEX: MUCH BETTER
+# 	PERFORMANCE in data selection
+
+
+# Sum stats by level
+# most descr and summary stats functions have a level argument, use level for grouping
+frame.sum(level = 'key2') # again, so clean
+frame.sum(level = 'color', axis = 1)
+# probs a good idea to ahve good index names, so you can call by name, which
+# 	is clearer than just saying level = 1 or level = 2
+# super clean for groupby stuff...
+
+
+# using dataframes columns
+frame = DataFrame({
+	'a': range(7),
+	'b': range(7, 0, -1),
+	'c': ['one', 'one', 'one', 'two', 'two', 'two', 'two'],
+	'd': [0, 1, 2, 0, 1, 2, 3]
+})
+frame2 = frame.set_index(['c', 'd'])
+frame.set_index(['c', 'd'], drop = False)
+frame2.reset_index() # pulls ix into cols
+
+
+# Other pandas Topics
+import pandas.io.data as web
+pdata = pd.Panel(dict(
+	(stk, web.get_data_yahoo(stk, '1/1/2009', '6/1/2012'))
+	for stk in ['AAPL', 'GOOG', 'MSFT', 'DELL']
+	# dict of stock data
+))
+# how is this different than a list or dict? maybe so you can have all of the
+# 	pandas operators and data structures built in...
+pdata = pdata.swapaxes('items', 'minor')
+pdata.ix[:, '6/1/2012', :]
+# so if you have a DF for each stock ticker, you'd use ix selecting to 
+# 	get all tickers, 6/1/2012, and all columns
+# so it's like panel.ix[df, rows, columns]
+pdata.ix['Adj Close', '5/22/2012':, :] # 5/22/2012 or later
+# closing price, after certain date, all tickers
+# So here it's like panel[col, row, dfs]
+# PROBS TOO INTO THE WEEDS TO USE PANEL FOR ANY HEAVY LIFTING RIGHT NOW, 
+# 	BUT MIGHT BE GOOD FOR STORING DFS, ESP BEFORE WRITING TO EXCEL. MAYBE
+# 	AFTER READING FROM EXCEL ALSO.
+stacked = pdata.ix[:, '5/30/2012':, :].to_frame()
+stacked.to_panel()
+
+page 154
+
+
+

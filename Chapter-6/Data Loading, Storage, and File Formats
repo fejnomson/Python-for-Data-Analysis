@@ -58,4 +58,162 @@ cont
 
 
 # Writing Data Out to Text Format
-page 162
+data = pd.read_csv('ex5.csv')
+data.to_csv(sys.stdout, sep = '|')
+# sys.stdout prints the output. might be useful for checking output
+data.to_csv(sys.stdout, np_rep = 'NULL') # null just means empty
+data.to_csv(sys.stdout, index = False, header = False)
+data.to_csv(sys.stdout, index = False, columns = ['a', 'b', 'c'])
+dates = pd.date_range('1/1/2000', periods = 7)
+ts = Series(np.arange(7), index = dates)
+ts.to_csv(sys.stdout)
+Series.from_csv('tseries.csv', parse_dates = True)  #can do series also
+
+
+# Manually Working with Delimited Formats
+import csv as csv
+f = open('ex7.csv')
+reader = csv.reader(f)
+for line in reader:
+	print(line)
+lines = list(csv.reader(open('ex7.csv')))
+header, values = lines[0], lines[1:]
+data_dict = {h: v for h, v, in zip(header, zip(*values))}
+data_dict
+class my_dialect(csv.Dialect):
+	lineterminator = '\n'
+	delimiter = ';'
+	quotechar = '"'
+reader = csv.reader(f, dialect = my_dialect)
+# make own dialect to pass to csv reader
+reader = csv.reader(f, delimiter = '|')
+# pass own delimiter
+with open('mydata.csv', 'w') as f:
+	writer = csv.writer(f, dialect = my_dialect)
+	writer.writerow(('one', 'two', 'three'))
+	writer.writerow(('1', '2', '3'))
+	writer.writerow(('4', '5', '6'))
+	# write files manually
+
+# JSON Data
+# popular for passing data between the web
+obj = """
+{
+	"name": "Wes",
+	"places_lived": ["United States", "Spain", "Germany"],
+	"pet": null,
+	"siblings": [{"name": "Scott", "age": 25, "pet": "Zuko"},
+							 {"name": "Katie", "age": 33, "pet": "Cisco"}]
+}
+"""
+import json
+result = json.loads(obj)
+asjson = json.dumps(result) # back to string really
+siblings = DataFrame(result['siblings'], columns = ['name', 'age'])
+siblings
+
+# XML and HTML: Web Scraping
+# So if tables are in a web page, but not in an easily downloadable format
+from lxml.html import parse
+from urllib.request import urlopen
+parsed = parse(urlopen('http://finance.yahoo.com/q/op?s=AAPL+Options'))
+doc = parsed.getroot()
+links = doc.findall('.//a')
+links[15:20]
+lnk = links[2]
+lnk
+lnk.get('href') # first link on the page, address
+lnk.text_content() # text of button representing link
+urls = [lnk.get('href') for lnk in doc.findall('.//a')]
+# for every element containing the 'a' tag, get the link address, store in
+# 	list
+urls[-10:]
+tables = doc.findall('.//table')
+calls = tables[9]
+puts = tables[13]
+calls = tables[0]
+rows = calls.findall('.//tr')
+def _unpack(row, kind = 'td'):
+	elts = row.findall('.//%s' % kind)
+	return [val.text_content() for val in elts]
+_unpack(rows[0], kind = 'th')
+_unpack(rows[0], kind = 'td')
+_unpack(rows[1], kind = 'td')
+# doesn't really work as intended...probably out of date
+
+# skipping xml parsing...
+
+# Binary Data Formats
+# can write to disk efficiently using python's built-in serialization, using
+# 	save() method
+frame = pd.read_csv('ex1.csv')
+frame
+frame.to_pickle('frame_pickle')
+pd.read_pickle('frame_pickle')
+# intended as a short term storage format; pickle might not be stable over
+# 	time
+path <- '//firm.seyfarth.com/DFS/CHIUsers/JMonson/My Documents/Programming/Python/pydata-book-master/ch06/frame_pickle'
+load(path)
+# looks like this is similar but not exactly the same as save() and load()
+# 	in R
+
+# HDF5 Format
+# super efficient file format and library for reading and writing
+# HDF is a c library that saves data in a format that interfaces with
+# 	a couple other languages
+# two libs in python for this, pandas has a class that works on top of one
+# 	of them
+store = pd.HDFStore('mydata.h5')
+store['obj1'] = frame
+store['obj1_col'] = frame['a']
+store
+store['obj1']
+# "since many data analysis problems are IO-bound (rather than CPU bound)
+# 	, using a tool like HDF5 can massively accelerate your applications"
+
+# Reading Excel Files
+# pandas supports Excel with ExcelFile class, which sits on top of xlrd
+# 	and openpyxl packages
+xls_file = pd.ExcelFile('data.xls')
+# instantiate excel object with a path. I think this is more for parsing...
+table = xls_file.parse('Sheet1')
+
+# Interacting with HTML and Web APIs
+import requests
+url = 'http://search.twitter.com/search.json?q=python%20pandas'
+url = 'https://twitter.com/search?q=python%20pandas&src=typd'
+resp = requests.get(url)
+resp
+import json
+data = json.loads(resp.text)
+data.keys()
+# Looks like twitter api has changed since book. revisit later if needed...
+
+# Interactive with Databases
+import sqlite3
+query = """
+CREATE TABLE test
+(a VARCHAR(20), b VARCHAR(20),
+c REAL, d INTEGER
+);"""
+con = sqlite3.connect(':memory:') # in memory database?
+con.execute(query)
+con.commit()
+data = [
+	('Atlanta', 'Georgia', 1.25, 6),
+	('Tallahassee', 'Florida', 2.6, 3),
+	('Sacremento', 'California', 1.7, 5)
+]
+stmt = "INSERT INTO test VALUES(?, ?, ?, ?)"
+con.executemany(stmt, data)
+con.commit()
+cursor = con.execute('select * from test')
+rows = cursor.fetchall()
+rows
+cursor.description
+DataFrame(rows, columns = list(zip(*cursor.description))[0])
+import pandas.io.sql as sql
+sql.read_sql('select * from test', con) # f(query, db)
+
+# Storing and Loading Data in MongoDB
+# ... skipping ...

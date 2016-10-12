@@ -111,4 +111,34 @@ left2.join([right2, another], how = 'outer')
 
 
 # Concatenating Along an Axis
-page 185
+sl = Series([0, 1], index = ['a', 'b'])
+s2 = Series([2, 3, 4], index = ['c', 'd', 'e'])
+s3 = Series([5, 6], index = ['f', 'g'])
+pd.concat([sl, s2, s3])
+pd.concat([sl, s2, s3], axis = 1)
+s4 = pd.concat([sl*5, s3])
+pd.concat([sl, s4], axis = 1)
+# by column, union of keys
+pd.concat([sl, s4], axis = 1, join = 'inner')
+# by column, intersect of keys
+pd.concat([sl, s4], axis = 1, join_axes = [['a', 'c', 'b', 'e']])
+# specify which keys to join on
+result = pd.concat([sl, sl, s3], keys = ['one', 'two', 'three'])
+result
+# So you can keep track of which obs. came from which chunk
+result.unstack()
+pd.concat([sl, s2, s3], axis = 1, keys = ['one', 'two', 'three'])
+# keys become col names if you go by cols
+df1 = DataFrame(np.arange(6).reshape(3, 2), index = ['a', 'b', 'c'], columns = ['one', 'two'])
+df2 = DataFrame(5 + np.arange(4).reshape(2, 2), index = ['a', 'c'], columns = ['three', 'four'])
+pd.concat([df1, df2], axis = 1, keys = ['level1', 'level2'])
+# looks like it stacks the columns automatically, then throws the 'key' / level on top of each group of columns.
+pd.concat({'level1': df1, 'level2': df2}, axis = 1)
+# if pass dict, dicts keys are automatically used as keys
+pd.concat([df1, df2], axis = 1, keys = ['level1', 'level2'], names = ['upper', 'lower'])
+# name the keys you pass that become an index
+stopped top of page 188
+
+
+
+

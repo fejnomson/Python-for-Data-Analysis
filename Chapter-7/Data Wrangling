@@ -338,5 +338,46 @@ cats.get_values()
 # 	'Index.Date': pd.cut(out_punch, dates).get_values()
 # })
 
-page 201
+# Detecting and Filtering Outliers
+np.random.seed(12345)
+data = DataFrame(np.random.randn(1000, 4))
+data.describe()
+col = data[3]
+col[np.abs(col) > 3]
+# filter to rows that have a value < -3 or > 3
+data[(np.abs(data) > 3).any(1)] # df.any(): any condition true over requested axis
+# cap values outside of 3
+data[np.abs(data) > 3] = np.sign(data) * 3
+
+
+# Permutation and Random Sampling
+# change order of df or series, like vect[sample(length(vect))]
+df = DataFrame(np.arange(5* 4).reshape(5, 4))
+sampler = np.random.permutation(5)
+sampler
+df.take(sampler)
+# a bit different from r in that you can just do df.take(vect), instead
+# 	of df[vect, ]
+len(df)
+# interesting that this takes rows. I think R is intuitive in that df
+# 	inherits from list, but i NEVER use ncol(), and ALWAYS use nrow()
+# 	so think it makes sense...
+df.take(np.random.permutation(len(df))[:3])
+# quick way to get random sample df, no replacement
+bag = np.array([5, 7, -1, 6, 4])
+sampler = np.random.randint(0, len(bag), size = 10)
+sampler
+draws = bag.take(sampler)
+draws
+# so the random sample is greater than len(df), use replacement
+
+
+# Computing Indicator/Dummy Variables
+df = DataFrame({
+	'key': ['b', 'b', 'a', 'c', 'a', 'b'],
+	'data1': range(6)
+})
+pd.get_dummies(df['key'])
+
+page 203
 

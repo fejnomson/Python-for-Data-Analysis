@@ -137,8 +137,206 @@ pd.concat({'level1': df1, 'level2': df2}, axis = 1)
 # if pass dict, dicts keys are automatically used as keys
 pd.concat([df1, df2], axis = 1, keys = ['level1', 'level2'], names = ['upper', 'lower'])
 # name the keys you pass that become an index
-stopped top of page 188
 
 
 
+df1 = DataFrame(
+	np.random.randn(3, 4),
+	columns = ['a', 'b', 'c', 'd']
+)
+df2 = DataFrame(
+	np.random.randn(2, 3),
+	columns = ['b', 'd', 'a']
+)
+df1
+df2
+pd.concat([df1, df2], ignore_index = True)
+# this is more R-like: basically ignore indexes / keys
+
+pd.concat([df1, df2], join = 'inner')
+pd.concat([df1, df2], join = 'inner', ignore_index = True)
+# basically plyr::rbind.fill
+pd.concat([df1, df2], axis = 1, join = 'inner')
+# so weird that you have a clean and fast rbind.fill and cbind.fill
+# 	with a bunch of clean arguments in pandas, but not really any good
+# 	equivalents in R
+
+
+
+# Combining Data with Overlap -------------------------------------------------
+a = Series(
+	[np.nan, 2.5, np.nan, 3.5, 4.5, np.nan],
+	index = ['f', 'e', 'd', 'c', 'b', 'a']
+)
+b = Series(
+	np.arange(len(a), dtype = np.float64),
+	index = ['f', 'e', 'd', 'c', 'b', 'a']
+)
+b[-1] = np.nan
+np.where(pd.isnull(a), b, a)
+b[:-2].combine_first(a[2:])
+# so this takes the first at each ix. so if there's nothing in a, but in b;
+# 	if there's nothing in b, put in a, if both populated, put in the first one.
+df1 = DataFrame({
+	'a': [1., np.nan, 5., np.nan],
+	'b': [np.nan, 2., np.nan, 6.],
+	'c': range(2, 18, 4)
+})
+df2 = DataFrame({
+	'a': [5., 4., np.nan, 3., 7.],
+	'b': [np.nan, 3., 4., 6., 8.]
+})
+df1.combine_first(df2)
+# this is series.combine_first() but by column for each data frame. Basically,
+# 	if anything is 'missing' from a column in the first data frame, replace
+# 	it with whatever's in the second column.
+# kind of like ifelse, but incorporates key-based alignment, as opposed to 
+# 	relying strictly on integer-based alignment
+# Combining Data with Overlap -------------------------------------------------
+
+
+
+# Reshaping and Pivoting ------------------------------------------------------
+# Reshaping with Hierarchical Indexing
+# two main functions are stack() and unstack()
+# stack(): columns to rows
+# unstack(): rows to columns
+data = DataFrame(
+	np.arange(6).reshape((2, 3)),
+	index = pd.Index(['Ohio', 'Colorado'], name = 'state'),
+	columns = pd.Index(['one', 'two', 'three'], name = 'number')
+)
+data
+result = data.stack()
+result.unstack() # stack and unstack default to inner-most index level
+result.unstack(0) # manually specify NOT using inner-most index level
+result.unstack('state') # specify level to unstack by level name
+
+s1 = Series([0, 1, 2, 3], index = ['a', 'b', 'c', 'd'])
+s2 = Series([4, 5, 6], index = ['c', 'd', 'e'])
+data2 = pd.concat([s1, s2], keys = ['one', 'two'])
+# 'a' & 'b' is missing from 'two', so there has to be a slot, but it'll be NA
+data2.unstack()
+data2.unstack().stack() # drops missing by default, so lose the NAs introduced
+data2.unstack().stack(dropna = False)
+
+df = DataFrame(
+	{'left': result, 'right': result + 5},
+	columns = pd.Index(['left', 'right'], name = 'side')
+)
+df.unstack('state')
+df.unstack('state').stack('side')
+# very similar to charting I do in Tableau
+
+
+# Pivoting 'long' to 'wide' format
+# pivot is similar to tidyr, pd.stack and pd.unstack: for going back and 
+# 	forth between long format.
+# Long format is used in databases, where you'd assign two columns as
+# 	keys. I've used this format for plotting, e.g. gantt plotting. But
+# 	long format isn't that useful for analysis...
+# pivot is just a convenience, it's the same as
+# 	df.set_index(['key1', 'key2']).unstack('item')
+# Reshaping and Pivoting ------------------------------------------------------
+
+
+
+# Data Transformation ---------------------------------------------------------
+# removing duplicates
+data = DataFrame({
+	'k1': ['one'] * 3 + ['two'] * 4,
+	'k2': [1, 1, 2, 3, 3, 4, 4]
+})
+data
+data.duplicated() # same as r duplicated(df)
+data.drop_duplicates() # drops dups
+data['v1'] = range(7)
+data.drop_duplicates(['k1'])
+# this is just so much cleaner than R: df[!duplicated(df[c('k1')])]
+data.drop_duplicates(['k1', 'k2'], take_last = True)
+
+
+# Transforming Data Using a Fuction or Maping
+
+data = DataFrame({
+	'food': ['bacon', 'pulled pork', 'bacon', 'Pastrami', 'corned beef', 'Bacon', 'pastrami', 'honey ham', 'nova lox'],
+	'ounces': [4, 3, 12, 6, 7.5, 8, 3, 5, 6]
+})
+meat_to_animal = {
+	'bacon': 'pig',
+	'pulled pork': 'pig',
+	'pastrami': 'cow',
+	'corned beef': 'cow',
+	'honey ham': 'pig',
+	'nova lox': 'salmon'
+}
+data['animal'] = data['food'].map(str.lower).map(meat_to_animal)
+data['food'].map(lambda x: meat_to_animal[x.lower()]) # so for every element, to lower case, then subset the meat_to_animal dict based on lower case
+# crazy that .map can take a dict of old and new values
+x = Series(['chicago', 'madison', 'seattle', 'los angeles', 'new york', 'DC'])
+x.map({
+	'chicago': 'midwest',
+	'madison': 'midwest',
+	'seattle': 'west',
+	'los angeles': 'west',
+	'new york': 'east',
+	'DC': 'east'
+})
+# so this can be lapply-like OR plyr::map_values-like
+
+
+# Replacing Values
+data = Series([1., -999., 2., -999., -1000., 3.])
+data
+data.replace(-999, np.nan)
+# MUCH BETTER FOR plyr::map_values like applicaitons
+data.replace([-999, -1000], np.nan)
+data.replace({-999: np.nan, -1000: 0})
+
+
+# Renaming Axis Indexes
+data = DataFrame(
+	np.arange(12).reshape((3, 4)),
+	index = ['Ohio', 'Colorado', 'New York'],
+	columns = ['one', 'two', 'three', 'four']
+)
+# map method for indexes
+data.index.map(str.upper) # doesn't work...
+data.index.map(lambda x: x.upper()) # works
+data.rename(index = str.title, columns = str.upper)
+# transforms without modifying the original. Looks like this applies a function to each element??
+# 	like it actualy map()s row and column ixs
+data.rename(index = {'Ohio': 'INDIANA'}, columns = {'three': 'peekaboo'})
+# {current: new}
+data.rename(index = {'Ohio': 'INDIANA'}, inplace = True)
+
+
+# Discretization and Binning
+ages = [20, 22, 25, 27, 21, 23, 37, 31, 61, 45, 41, 32]
+bins = [18, 25, 35, 60, 100]
+cats = pd.cut(ages, bins)
+# returns Categorical object
+# like array of string indicating bin name
+cats.codes # looks like this returns the bin number, as in findInterval()
+cats.categories
+pd.value_counts(cats)
+pd.cut(ages, [18, 26, 36, 61, 100], right = False)
+# pass own bin names
+group_names = ['Youth', 'YoungAdult', 'MiddleAged', 'Senior']
+pd.cut(ages, bins, labels = group_names) # pass own bin labels
+# so maybe the labels could be dates
+data = np.random.rand(20)
+pd.cut(data, 4, precision = 2) # specify the number of bins instead of the bin edges
+data = np.random.randn(1000)
+cats = pd.qcut(data, 4) # cut into 4 equally sized groups
+pd.qcut(data, [0, 0.1, 0.5, 0.9, 1.]) # pass own quantiles
+cats.get_values()
+# LOOKS LIKE THIS RETURNS THE BIN FOR EACH VALUE.
+# so you could do something like:
+# DataFrame({
+#   'Out.Punch': out_punch
+# 	'Index.Date': pd.cut(out_punch, dates).get_values()
+# })
+
+page 201
 

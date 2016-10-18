@@ -378,6 +378,135 @@ df = DataFrame({
 	'data1': range(6)
 })
 pd.get_dummies(df['key'])
+# makes matrix indicating whether values are present in Series or not
+dummies = pd.get_dummies(df['key'], prefix = 'key')
+df_with_dummy = df[['data1']].join(dummies)
+mnames = ['movie_id', 'title', 'genres']
+path = '//firm.seyfarth.com/DFS/CHIUsers/JMonson/My Documents/Programming/Python/pydata-book-master/ch02/movielens/movies.dat'
+movies = pd.read_table(path, sep = '::', header = None, names = mnames)
+movies[:10]
+genre_iter = (set(x.split('|')) for x in movies.genres) # Basically like a list of sets
+genres = sorted(set.union(*genre_iter)) # The * means to unpack all items
+dummies = DataFrame(np.zeros((len(movies), len(genres))), columns = genres)
+for i, gen in enumerate(movies.genres):
+	dummies.ix[i, gen.split('|')] = 1
+movies_windic = movies.join(dummies.add_prefix('Genre_'))
+movies_windic.ix[0]
 
-page 203
+values = np.random.rand(10)
+values
+bins = [0, 0.2, 0.4, 0.6, 0.8, 1]
+pd.get_dummies(pd.cut(values, bins))
+
+
+# String Manipulation
+val = 'a,b,  guido'
+val.split(',')
+pieces = [x.strip() for x in val.split(',')]
+first, second, third = pieces
+'::'.join(pieces)
+'guido' in val
+val.index(',')
+val.find(':')
+val.index(':')
+val.count(',')
+val.replace(',', '::') # copy on modify
+val.replace(',', '')
+# 	overall, strings are so clean and simply in python
+import re
+text = 'foo 	  bar\t baz  \tqux'
+re.split('\s+', text) # not a guru on regex, but could use learn regex the hard way
+regex = re.compile('\s+') # FOR RE-USING THE SAME REGEX PATTERN
+regex.split(text) 				# call methods from the regex object. could be useful
+													# Think more efficient than string.split(regex, text)
+regex.findall(text) 			# Wish it were this clean in R
+r'C:\x' 									# "Raw string literals"; could be useful for
+													# 	directory munging? makes equivalent to 'C:\\x'
+r'G:\Kindred (68914)\Collins (11)\Work\Call BATCH\Reporting BATCH'
+text = """
+Dave dave@google.com
+Steve steve@gmail.com
+Rob rob@gmail.com
+Ryan ryan@yahoo.com
+"""
+pattern = r'[A-Z0-9._%+_]+@[A-Z0-9.-]+\.[A-Z]{2,4}'
+regex = re.compile(pattern, flags = re.IGNORECASE)
+regex.findall(text) 			# Cool
+m = regex.search(text)		# Returns match object. Mostly useful for start
+													# and stop of the match. only returns for first
+													# match.
+text[m.start():m.end()]
+print regex.sub('REDACTED', text) # Lulz.
+
+pattern = r'([A-Z0-9._%+-]+)@(A-Z0-9.-]+)\.([A-Z]{2,4})'
+regex = re.compile(pattern, flags = re.IGNORECASE)
+m = regex.match('wesm@bright.net')
+m.groups()								# Not sure why doesn't work...
+regex.findall(text)
+# I could spend a ton more time on this, but don't really think it's that
+# 	relevant to what I'm doing right now. Will re-visit if necessary.
+
+
+# Vectorized string functions in pandas
+data = {
+	'Dave': 'dave@google.com',
+	'Steve': 'steve@gmail.com',
+	'Rob': 'rob@gmail.com',
+	'Wes': np.nan
+}
+data = Series(data)
+# Can't use base string and regex methods, because they don't handle NAs;
+# 	hence pandas string functionality
+data.str.contains('gmail')
+data.str.match('[A-Z]', flags = re.IGNORECASE)
+matches = data.str.findall('[A-Z]', flags = re.IGNORECASE)
+matches
+matches.str.get(1) 					# for vectorized element retreival
+matches.str[0] 							# alternate
+matches.str[1:3]						# vectorised slicing
+# So the point with pandas string methods is more vectorization of things
+# 	that already exist in python, rather than duplicate methods or a 
+#		stringr-like rewrite of the original for user friendlyness.
+
+
+# Example: USDA Food Database
+%bookmark pandas_book "//firm.seyfarth.com/DFS/CHIUsers/JMonson/My Documents/Programming/Python/pydata-book-master/"
+%pwd
+%cd pandas_book
+%pwd
+os.chdir("//firm.seyfarth.com/DFS/CHIUsers/JMonson/My Documents/Programming/Python/pydata-book-master/ch07")
+import json
+db = json.load(open('foods-2011-10-03.json'))
+len(db)
+db[0].keys()
+db[0]['nutrients'][0]
+nutrients = DataFrame(db[0]['nutrients'])
+info_keys = ['description', 'group', 'id', 'manufacturer']
+info = DataFrame(db, columns = info_keys)
+info[:5]
+pd.value_counts(info.group)[:10]
+nutrients = []
+for rec in db:
+	fnuts = DataFrame(rec['nutrients'])
+	fnuts['id'] = rec['id']
+	nutrients.append(fnuts)
+nutrients = pd.concat(nutrients, ignore_index = True)
+nutrients.duplicated().sum()
+nutrients = nutrients.drop_duplicates()
+col_mapping = {'description': 'food', 'group':'fgroup'}
+info = info.rename(columns = col_mapping, copy = False)
+col_mapping = {'description': 'nutrient', 'group':'nutgroup'}
+nutrients = nutrients.rename(columns = col_mapping, copy = False)
+ndata = pd.merge(nutrients, info, on = 'id', how = 'outer')
+
+result = ndata.groupby(['nutrient', 'fgroup'])['value'].quantile(0.5)
+# result['Zinc', 'Zn'].order().plot(kind = 'barh')
+result['Zinc, Zn'].sort_values().plot(kind = 'barh')
+
+by_nutrient = ndata.groupby(['nutgroup', 'nutrient'])
+get_maximum = lambda x: x.xs(x.value.idxmax())
+get_minimum = lambda x: x.xs(x.value.idxmin())
+max_foods = by_nutrient.apply(get_maximum)[['value', 'food']]
+max_foods.food = max_foods.food.str[:50]
+max_foods.ix['Amino Acids']['food']
 

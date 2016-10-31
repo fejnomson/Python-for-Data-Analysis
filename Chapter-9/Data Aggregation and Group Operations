@@ -22,4 +22,425 @@ df.groupby(['key1', 'key2']).mean()
 df.groupby(['key1', 'key2']).size() # nrows within each group
 
 # Iterating Over Groups
-page 255 / 271
+# groupby object supports iteration
+for name, group in df.groupby('key1'):
+	print(name)
+	print(group)
+for (k1, k2), group in df.groupby(['key1', 'key2']):
+	# First element is tuple of key values
+	print(k1, k2)
+	print(group)
+
+type(list(df.groupby('key1'))[0]) # so each element is a tuple (key, dataframe)
+list(df.groupby(['key1', 'key2']))[0][0] # tuple of keys instead of key
+list(df.groupby(['key1', 'key2']))[0][1] # still dataframe
+
+dict(list(df.groupby('key1')))
+dict(list(df.groupby(['key1', 'key2'])))
+# key is tuple. Tuple is same as list but immutable, so you can't reassign
+# 	anything after you define it.
+# key can be used for subsetting
+# crazy; turns the group name into key...
+pieces = dict(list(df.groupby('key1')))
+pieces['b']
+
+# groupby cols
+df.dtypes
+grouped = df.groupby(df.dtypes, axis = 1)
+list(grouped)
+list(grouped)[0]
+list(grouped)[0][0] # key for numerics
+list(grouped)[0][1] # data for numerics
+list(grouped)[1][0] # key for object / strings
+list(grouped)[1][1] # data for strings
+
+
+# Selecting Column or Subset of Columns
+df.groupby('key1')['data1']
+df.groupby('key1')[['data2']]
+# select certain columns for aggregation; subset before grouping
+df['data1'].groupby(df['key1'])
+df[['data1']].groupby(df['key1'])
+
+df.groupby(['key1', 'key2'])[['data2']].mean()
+s_grouped = df.groupby(['key1', 'key2'])['data2']
+s_grouped.mean()
+
+
+# Grouping with Dicts Series
+people = DataFrame(
+	np.random.randn(5, 5),
+	columns = ['a', 'b', 'c', 'd', 'e'],
+	index = ['Joe', 'Steve', 'Wes', 'Jim', 'Travis']
+)
+people.ix[2:3, ['b', 'c']] = np.nan
+people
+mapping = {
+	'a': 'red',
+	'b': 'red',
+	'c': 'blue',
+	'd': 'blue',
+	'e': 'red',
+	'f': 'orange'
+}
+mapping
+by_column = people.groupby(mapping, axis = 1)
+by_column.sum()
+
+mapping2 = {
+	'a': 'red',
+	'b': 'red',
+	'c': 'red',
+	'd': 'red',
+	'e': 'blue'
+}
+mapping2
+by_column = people.groupby(mapping2, axis = 1)
+by_column.sum()
+
+map_series = Series(mapping)
+map_series
+people.groupby(map_series, axis = 1).count()
+
+# So it's basically rowSums, but by group, and you're defining which
+# 	column corresponds to each group.
+# I think a better example might be:
+people2 = DataFrame(
+	np.repeat(
+		np.array(
+			[np.repeat(1, 5)]
+		),
+		4,
+		axis = 0
+	),
+	columns = ['Tom', 'Deb', 'Jeff', 'Jen', 'Han'],
+	index = ['2013', '2014', '2015', '2016']
+)
+mapping3 = {
+	'Tom': 'Male',
+	'Deb': 'Female',
+	'Jeff': 'Male',
+	'Jen': 'Female',
+	'Han': 'Female'
+}
+by_gender = people2.groupby(mapping3, axis = 1)
+by_gender.sum()
+by_gender.count()
+
+map_series3 = Series(mapping3)
+# Intuitively, this makes sense because series and dicts are so similar;
+# 	dict is key-value pair, series is key-value pair where the key is
+# 	explicitly an index.
+by_gender = people2.groupby(map_series3, axis = 1)
+by_gender.sum()
+
+
+# Grouping with Functions
+people.groupby(len).sum()
+# Calls the function once per value in the index, aggs into groups, then
+# 	applies on the groups.
+# So:
+people.index.map(len) # these are the groups
+
+key_list = ['one', 'one', 'one', 'two', 'two']
+people.groupby([len, key_list]).min()
+# Can mix functions and lists / dicts / etc. Probably applies the function
+# 	to each element int he index, stores as array, then makes into
+# 	groups.
+
+people.groupby(key_list).min()
+# Everything's converted to np.array under the hood. I think this is what
+# 	I've been looking for: something general purpose like the R vector.
+
+
+# Grouping by Index Levels
+columns = pd.MultiIndex.from_arrays(
+	[['US', 'US', 'US', 'JP', 'JP'], [1, 3, 5, 1, 3]],
+	names = ['city', 'tenor']
+)
+hier_df = DataFrame(np.random.randn(4, 5), columns = columns)
+hier_df
+hier_df.groupby(level = 'city', axis = 1).count()
+
+
+# Data Aggregation
+grouped = df.groupby('key1')
+grouped['data1'].quantile(0.9)
+grouped['data1'].sum()
+# invokes a SERIES method on the grouped series
+
+def peak_to_peak(arr):
+	return arr.max() - arr.min()
+grouped.agg(peak_to_peak)
+# USE AGG FOR ANY FUNCTION THAT TURNS AN ARRAY INTO A SCALAR
+# Usual suspects are highly optimised: count, sum, mean, first, last, etc.
+
+tips = pd.read_csv('ch08/tips.csv')
+tips['tip_pct'] = tips['tip'] / tips['total_bill']
+tips[:6]
+
+
+# Column Wise and Multiple Function Application
+grouped = tips.groupby(['sex', 'smoker'])
+grouped_pct = grouped['tip_pct']
+# For some reason, I think it's so weird to slice a grouped df by column
+grouped_pct.agg('mean')
+grouped_pct.agg(['mean', 'std', peak_to_peak])
+grouped_pct.agg({
+	# This is more of the classic dplyr groupby summarise. But I love that the
+	# 	field mappings are consistent with the rest of pandas and python...
+	'Mean': 'mean',
+	'Std.Dev': 'std',
+	'P2P': peak_to_peak
+})
+grouped_pct.agg([
+	# can also do a list of tuples
+	('Mean', 'mean'),
+	('Std.Dev', np.std),
+	('P2P', peak_to_peak)
+])
+
+functions = ['count', 'mean', 'max']
+result = grouped['tip_pct', 'total_bill'].agg(functions)
+# pass a LIST of functions, will compute for each function in list, storing
+# 	output for each.
+result['tip_pct']
+ftuples = [('Durchschnitt', 'mean'), ('Abweichung', np.var)]
+grouped['tip_pct', 'total_bill'].agg(ftuples)
+# same rules Re custom names. In some ways, you're passing a mapping to .agg()
+
+grouped.agg(
+	{
+		'tip': np.max,
+		'size': 'sum'
+	}
+)
+# The names will match to column names, so you can apply different functions
+# 	to different input columns.
+mapping = pd.Series([np.max, sum], index = ['tip', 'size'])
+mapping['tip'](np.array([1, 10, 2])) # surprisingly R-like...good
+mapping['size'](np.array([1, 10, 2]))
+grouped[['tip', 'size']].agg(mapping)
+# so again, series are dict-like
+grouped.agg({
+	'tip_pct': ['min', 'max', 'mean', 'std'],
+	'size': 'sum'
+})
+# Pass a list of functions to one field, and just one function to another.
+
+tips.groupby(['sex', 'smoker'], as_index = False).mean()
+# as_index = False # more R-like; output groups are columns just the same
+# 	as any other.
+
+
+# Groupwise Operations and Transformations
+k1_means = df.groupby('key1').mean().add_prefix('mean_')
+k1_means
+pd.merge(df, k1_means, left_on = 'key1', right_index = True)
+# compute means, then merge them with the original data to have the means
+# 	for each group stored at each obs.
+
+key = ['one', 'two', 'one', 'two', 'one']
+people.groupby(key).mean() # smushed to one obs. per group
+people.groupby(key).transform(np.mean) # BROADCASTS to keep the same shape
+
+def demean(arr):
+	# Subract mean from each value
+	return arr - arr.mean()
+demeaned = people.groupby(key).transform(demean)
+# I like that it's intuitive to derive a key elsewhere and pass as argument
+# Transform: either scalar that's broadcasted OR array of exact same size
+
+# Apply: General split-apply-combine
+def top(df, n = 5, column = 'tip_pct'):
+	return df.sort_values(by = column)[-n:]
+top(tips, n = 6)
+tips.groupby('smoker').apply(top)
+# So apply actually uses pd.concat() to rbind everything together...
+tips.groupby(['smoker', 'day']).apply(top, n = 1, column = 'total_bill')
+# pass additional args AFTER the function name. like in vapply...
+
+result = tips.groupby('smoker')['tip_pct'].describe()
+result
+result.unstack('smoker')
+
+# These are equivalent:
+grouped.describe()
+f = lambda x: x.describe()
+grouped.apply(f)
+# The latter is the one that's so insanely flexible that I use it for 
+# 	everything in R...
+
+tips.groupby('smoker').apply(top)
+tips.groupby('smoker', group_keys = False).apply(top)
+# Avoid pulling the group key outside as an index; leave it as col
+tips.groupby('smoker', as_index = False).apply(top)
+# A little confused at this point... What's the diff btwn group keys and
+# 	index? prob doesn't matter at this point
+
+
+# Quantile and Bucket Analysis
+page 268 / 284
+frame = DataFrame({
+	'data1': np.random.randn(1000),
+	'data2': np.random.randn(1000)
+})
+factor = pd.cut(
+	# Breaks into quantiles; number of obs. in each bucket doesn't matter
+	frame.data1, 4
+)
+factor[:10]
+# So this makes 4 bins based on quantiles, and returns the BINS for the 
+#	 values in frame['data1']
+def get_stats(group):
+	return {
+		'min': group.min(),
+		'max': group.max(),
+		'count': group.count(),
+		'mean': group.mean()
+	}
+grouped = frame.data2.groupby(factor)
+# Group the second col, 'data2', by the bins of the first col, 'data1'
+# Pass categorical series directly to groupby for binning a df
+grouped.apply(get_stats).unstack()
+# returns a dict for each group, the dict is like a series in that the
+# 	values are min, max, count, mean; the series is kept vertical
+# then unstacking takes the first level of the index and pulls it into
+# 	one column per unique value.
+
+grouping = pd.qcut(
+	# breaks into ten groups; same number of obs. in each group
+	frame.data1, 10, labels = False
+)
+grouped = frame.data2.groupby(grouping)
+grouped.apply(get_stats).unstack()
+
+
+# Example: Filling Missing values with Group-Specific Values
+s = Series(np.random.randn(6))
+s[::2] = np.nan
+s
+s.fillna(s.mean())
+
+states = [
+	'Ohio', 'New York', 'Vermont', 'Florida',
+	'Oregon', 'Nevada', 'California', 'Idaho'
+]
+group_key = ['East'] * 4 + ['West'] * 4
+data = Series(np.random.randn(8), index = states)
+data[['Vermont', 'Nevada', 'Idaho']] = np.nan
+data
+data.groupby(group_key).mean()
+# na's dropped
+fill_mean = lambda g: g.fillna(g.mean())
+data.groupby(group_key).apply(fill_mean)
+# returns the original series, but filling in the mean for each group
+
+# working thru this step by step:
+gpd = data.groupby(group_key)
+gpd.get_group('East')
+gpd.get_group('West')
+# define groups
+fill_mean(gpd.get_group('East'))
+fill_mean(gpd.get_group('West'))
+# calll fill_mean on each group
+pd.concat([
+	fill_mean(gpd.get_group('East')),
+	fill_mean(gpd.get_group('West'))
+])
+# concat the groups together
+
+fill_values = {'East': 0.5, 'West': -1}
+# Think dict is pretty clean for mappings...
+fill_func = lambda g: g.fillna(fill_values[g.name])
+# group; group.fillna(mapping_dict[group.name]); 
+# can't pull name attribute from group? Where's group.name coming from?
+# Guess the name attribute is SET INTERNALLY, so you can't work thru it on
+# 	your own and then feed it thru the groupby.apply()
+# I think it's really interesting that you can match the groups with values
+# 	by matching the group names with a mapping dict...
+data.groupby(group_key).apply(fill_func)
+# Might want to spend more time with this because i think it's important
+
+
+# Example: Random Sampling and Permutation
+suits = ['H', 'S', 'C', 'D']
+card_val = (list(range(1, 11)) + [10] * 3) * 4
+base_names = ['A'] + list(range(2, 11)) + ['J', 'K', 'Q']
+cards = []
+for suit in ['H', 'S', 'C', 'D']:
+	cards.extend(str(num) + suit for num in base_names)
+deck = Series(card_val, index = cards)
+# I really like this; the series being a hashed vector
+deck[:13]
+def draw(deck, n = 5):
+	return deck.take(np.random.permutation(len(deck))[:n])
+draw(deck)
+get_suit = lambda card: card[-1]
+deck.groupby(get_suit).apply(draw, n = 2)
+# get_suit: function that's applied to every unique value in the index of
+# 	the object you're calling groupby on, resulting in an array-like 
+# 	object used for grouping
+deck.groupby(deck.index.map(get_suit)).apply(draw, n = 2)
+# This is the longhand, probably less-optimised version
+# In the spirit of tapply(); grouping deck vector by suit vector, then
+# 	taking two cards from each group
+deck.groupby(get_suit, group_keys = False).apply(draw, n = 2)
+# To avoid storing the group keys as the outer index level on the output
+# Overall, this is cool. I like this. I think the hashing and grouping ops
+# 	are pretty clean.
+
+
+# Example: Group Weighted Average and Correlation
+df = DataFrame({
+	'category': ['a', 'a', 'a', 'a', 'b', 'b', 'b', 'b'],
+	'data': np.random.randn(8),
+	'weights': np.random.randn(8)
+})
+df
+grouped = df.groupby('category')
+get_wavg = lambda g: np.average(g['data'], weights = g['weights'])
+grouped.apply(get_wavg)
+# It's weird because this is exactly what I ended up doing in R, but only 
+# 	after like 3 years of different ways of groupwise operations. Here,
+# 	it's front and center: your groups, the function you're applying to
+# 	each group, and then actually calling the function and storing the
+# 	output intuitively
+
+close_px = pd.read_csv(
+	'ch09/stock_px.csv',
+	parse_dates = True, # this automatically makes date-like character fields into datetimes
+	index_col = 0
+)
+close_px
+close_px[-4:]
+rets = close_px.pct_change().dropna()
+spx_corr = lambda x: x.corrwith(x['SPX'])
+# corr between two dfs.
+by_year = rets.groupby(lambda x: x.year) # rets.groupby(rets.index.map(lambda x: x.year))
+by_year.apply(spx_corr)
+
+by_year.apply(lambda g: g['AAPL'].corr(g['MSFT']))
+# appl with msft for each year
+# Striking how similar this is in spirit to what a lot of my groupwise ops
+# 	look like... (and how rare this is in R)
+
+
+# Example: groupwise Linear Regression
+import statsmodels.api as sm # so psyched this loaded...
+def regress(data, yvar, xvars):
+	Y = data[yvar] # intended to be one variable / field
+	X = data[xvars] # intended to be multiple variables / fields
+	X['intercept'] = 1.
+	result = sm.OLS(Y, X).fit() # regress X variables against Y, fit model
+	return result.params
+by_year.apply(regress, 'AAPL', ['SPX'])
+# Looks like this returns an ouput df of the beta for SPX's relationship
+# 	with AAPL and the y int. By year...
+close_px.plot()
+# Can't say I understand what the numbers mean, but probs outside of the
+# 	scope of what matters right now
+
+
+# Pivot Tables and Cross-Tabluation
+p275 / 291

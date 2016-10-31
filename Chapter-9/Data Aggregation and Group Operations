@@ -444,3 +444,75 @@ close_px.plot()
 
 # Pivot Tables and Cross-Tabluation
 p275 / 291
+tips = pd.read_csv('ch08/tips.csv')
+tips.pivot_table(index = ['sex', 'smoker'])
+tips['tip_pct'] = tips.tip / tips.total_bill
+# So this will make 'sex' and 'smoker' into groups / keys, then compute
+# 	the mean of each numeric column for each group.
+gpd = tips.groupby(['sex', 'smoker'])
+gpd.agg('mean')
+gpd.agg(np.mean)
+# So pivot table is just sytanctic sugar for groupby agg.
+
+tips.pivot_table(
+	['tip_pct', 'size'], # values to aggregate by
+	index = ['sex', 'day'], # output index / groups
+	columns = 'smoker' # output columns
+)
+
+tips.pivot_table(
+	['tip_pct', 'size'], # values to aggregate by
+	index = ['sex', 'day'], # output index / groups
+	columns = 'smoker', # output columns
+	margins = True # includes adding totals
+)
+
+tips.pivot_table(
+	'tip_pct', # values to aggregate by
+	index = ['sex', 'smoker'], # output index / groups
+	columns = 'day', # output columns
+	aggfunc = len,
+	margins = True # includes adding totals
+)
+
+tips.pivot_table(
+	'size', # values to aggregate by
+	index = ['time', 'sex', 'smoker'], # output index / groups
+	columns = 'day', # output columns
+	aggfunc = 'sum',
+	fill_value = 0 # fill NAs
+)
+
+
+# Cross-Tabulations: Crosstab
+data = DataFrame({
+	'Sample': [1, 2, 3, 4],
+	'Gender': ['Female', 'Male', 'Male', 'Male'],
+	'Handedness': ['Right-handed', 'Left-handed', 'Right-handed', 'Right-handed']
+})
+pd.crosstab(data.Gender, data.Handedness, margins = True)
+# convenience for counting by groups
+data.pivot_table(
+	index = ['Gender', 'Handedness'],
+	aggfunc = 'count',
+	# margins = True,
+	fill_value = 0
+).unstack('Handedness', fill_value = 0)
+# sketchily trying to do alternate
+
+pd.crosstab([tips.time, tips.day], tips.smoker, margins = True)
+tips.pivot_table(
+	'total_bill',
+	index = ['time', 'day'],
+	columns = 'smoker',
+	margins = True,
+	aggfunc = 'count'
+)
+# less sketchy equivalent using pivot table
+# so crosstab is just a convenience for counting members of groups
+
+
+# Example: 2012 Federal Election Commission Database
+page 278 / 294
+fec = pd.read_csv('ch09/P00000001-ALL.csv')
+fec.head()

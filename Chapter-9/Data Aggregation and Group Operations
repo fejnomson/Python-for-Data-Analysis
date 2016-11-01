@@ -516,3 +516,107 @@ tips.pivot_table(
 page 278 / 294
 fec = pd.read_csv('ch09/P00000001-ALL.csv')
 fec.head()
+fec.iloc[123456, :]
+unique_cands = fec.cand_nm.unique()
+parties = {
+	'Bachmann, Michelle': 'Republican',
+	'Romney, Mitt': 'Republican',
+	'Obama, Barack': 'Democrat',
+  "Roemer, Charles E. 'Buddy' III": 'Republican',
+  'Pawlenty, Timothy': 'Republican',
+  'Johnson, Gary Earl': 'Republican',
+  'Paul, Ron': 'Republican',
+  'Santorum, Rick': 'Republican',
+  'Cain, Herman': 'Republican',
+  'Gingrich, Newt': 'Republican',
+  'McCotter, Thaddeus G': 'Republican',
+  'Huntsman, Jon': 'Republican',
+  'Perry, Rick': 'Republican'
+}
+fec.cand_nm[123456:123461]
+fec.cand_nm[123456:123461].map(parties)
+# I think it's so clean that plyr::mapvalues() is just built-in as a dict
+fec['party'] = fec.cand_nm.map(parties)
+fec['party'].value_counts()
+(fec.contb_receipt_amt > 0).value_counts()
+fec = fec[fec.contb_receipt_amt > 0]
+
+# Donation Stats by Occupation and Employer
+fec.contbr_occupation.value_counts()[:10]
+occ_mapping = {
+	'INFORMATION REQUESTED PER BEST EFFORTS': 'NOT PROVIDED',
+	'INFORMATION REQUESTED': 'NOT PROVIDED',
+	'INFORMATION REQUESTED (BEST EFFORTS)': 'NOT PROVIDED',
+	'C.E.O.': 'CEO'
+}
+f = lambda x:	occ_mapping.get(x, x)
+fec.contbr_occupation = fec.contbr_occupation.map(f)
+emp_mapping = {
+	'INFORMATION REQUESTED PER BEST EFFORTS': 'NOT PROVIDED',
+	'INFORMATION REQUESTED': 'NOT PROVIDED',
+	'SELF': 'SELF-EMPLOYED',
+	'SELF EMPLOYED': 'SELF-EMPLOYED'
+}
+f = lambda x:	emp_mapping.get(x, x)
+fec.contbr_employer = fec.contbr_employer.map(f)
+
+fec_mrbo = fec[fec.cand_nm.isin(['Obama, Barack', 'Romney, Mitt'])]
+
+test_mapping = {
+	'Jeff': 'Jeffrey',
+	'Jeffery': 'Jeffrey'
+}
+test_series = Series(['Jeffrey', 'Jeff', 'Jeffery', 'Jeffrey'])
+f = lambda x: test_mapping.get(x, x)
+# So you're just supplying a default value. It's the same as dict['key'],
+# 	but the syntax is different and you have the option of supplying
+# 	a default value. So you're defining a lightweight function to pull
+# 	the value from the dict, with the value being the default value.
+test_mapping.get('Jeff', 'Jeff')
+test_mapping.get('Jeffrey', 'Jeffrey')
+test_series.map(f)
+
+by_occupation = fec.pivot_table(
+	'contb_receipt_amt',
+	index = 'contbr_occupation',
+	columns = 'party',
+	aggfunc = 'sum'
+)
+over_2mm = by_occupation[by_occupation.sum(1) > 2000000]
+over_2mm
+over_2mm.plot(kind = 'barh')
+
+
+def get_top_amounts(group, key, n = 5):
+	totals = group.groupby(key)['contb_receipt_amt'].sum()
+	# Order totals by key in descending order
+	return totals.sort_values(ascending = False)[:n]
+	# Interesting that the group argument is passed implicitly
+grouped = fec_mrbo.groupby('cand_nm')
+grouped.apply(get_top_amounts, 'contbr_occupation', n = 7)
+grouped.apply(get_top_amounts, 'contbr_employer', n = 10)
+
+# Bucketing Donation Amounts
+bins = np.array([0, 1, 10, 100, 1000, 10000, 100000, 1000000, 10000000])
+labels = pd.cut(fec_mrbo.contb_receipt_amt, bins)
+grouped = fec_mrbo.groupby(['cand_nm', labels])
+grouped.size().unstack(0)
+# I like using cut then analyzing by groups
+bucket_sums = grouped.contb_receipt_amt.sum().unstack(0)
+normed_sums = bucket_sums.div(bucket_sums.sum(axis = 1), axis = 0)
+normed_sums
+# This is cool; shows percent of all by donation bucket accross candidates
+normed_sums[:-2].plot(kind = 'barh', stacked = True)
+
+# Donation Statistics by State
+page 285 / 301
+grouped = fec_mrbo.groupby(['cand_nm', 'contbr_st'])
+totals = grouped.contb_receipt_amt.sum().unstack(0).fillna(0)
+percent = totals.div(totals.sum(1), axis = 0)
+percent[:10]
+
+
+from matplotlib.collections import LineCollection
+mpl_toolkits.basemap
+== isnt pre-loaded into ipython ===========
+	skipping for now
